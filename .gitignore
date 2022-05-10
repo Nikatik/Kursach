@@ -31,4 +31,12 @@
 *.out
 *.app
 
+# Project files
+x64/
+.vs/
+Debug/
+*.sln
+*.vcxproj
+*.vcxproj.*
+
 kursach
