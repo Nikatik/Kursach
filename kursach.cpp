@@ -30,6 +30,9 @@ int main()
     // t1-t2<tol1
 
     cout << "Hello World!\n";
-
+    
+    delete[] t1;
+    delete[] t2;
+    
     return 0;
 }

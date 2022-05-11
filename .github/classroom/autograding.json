@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Корректный запуск.",
+      "setup": "make test",
+      "run": ".github/test_ret_val.sh 0",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 100
+    }
+  ]
+}
