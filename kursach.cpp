@@ -8,7 +8,7 @@
 */
 #include "probe.hpp"
 #include <time.h>
-#define delta_time 1e-2
+#define delta_time 1e-4
 
 int main (int argc, char* argv[])
 {
@@ -17,34 +17,44 @@ int main (int argc, char* argv[])
     double g = 1.634;
     double P = 350.0;
 
-    double tol1 = 0.5;
-    double tol2 = 0.03;
-    double tol3 = 0.2;
+    double tol1     = 0.5;
+    double tol2     = 0.03;
+    double tol3     = 0.2;
+    double tol_prev = 1e10;
 
-    double M = 100.;
-    double z = 1000.;
-    double V = -30.;
+    double M  = 100.;
+    double z  = 1000.;
+    double V  = -30.;
+    double z0 = 1000.;
+    double V0 = -30.;
 
-    double a    = P / (g * I);
-    double k    = g * I;
-    double time = 0;
-    double x1;
-    double x2;
+    double a     = P / (g * I);
+    double k     = g * I;
+    double x1    = z;
+    double x2    = V;
+    double time  = 0;
+    double dtime = 0;
+    double ttime = 0;
+    double ftime = 0;
 
     long double* t1;
     long double* t2;
     try
     {
-        t1 = new long double[3];
-        t2 = new long double[3];
+        t1 = new long double[4];
+        t2 = new long double[4];
     }
     catch (const bad_alloc& e)
     {
-        cout << "ERROR: software error!!!" << endl;
+        cout << "ERROR: Software error: memory error!!!" << endl;
         return -3;
     }
 
-    bool drop = 0;
+    bool drop       = 0;
+    bool end        = 0;
+    bool full_trust = 0;
+    bool repeat     = 0;
+    int error       = 0;
 
     if (argc >= 2)
     {
@@ -148,6 +158,9 @@ int main (int argc, char* argv[])
         }
     }
 
+    z0 = z;
+    V0 = V;
+
     if (drop != 1)
     {
         while (z > 0)
@@ -178,6 +191,8 @@ int main (int argc, char* argv[])
             }
         }
     }
+    x1 = z;
+    x2 = V;
 
     // t1^3+(((k * a) / (2 * M) - g / 2)/((k * a^2) / (3 * M^2))) * t1^2 -
     // x1/((k * a^2) / (3 * M^2)) = 0
@@ -187,35 +202,142 @@ int main (int argc, char* argv[])
 
     // t1 - t2 < tol1
 
-    for (time = 0; time < 20; time += 0.1)
+    for (dtime = 0; x1 > tol2; dtime += delta_time)
     {
-        x1 = z + V * time - g * pow (time, 2.) / 2.;
-        x2 = V - g * time;
+        ftime += delta_time;
+        if (full_trust != 1)
+        {
+            if (repeat == 0)
+            {
+                z      = x1;
+                V      = x2;
+                repeat = 1;
+                dtime  = 0;
+            }
+            x1    = z + V * dtime - g * pow (dtime, 2.) / 2.;
+            x2    = V - g * dtime;
+            t1[3] = -1.;
+            t2[3] = -1.;
+            if (end != 1)
+            {
+                int res =
+                    cubic (t1,
+                           (((k * a) / (2. * M) - g / 2.) /
+                            ((k * pow (a, 2.)) / (3. * pow (M, 2.)))),
+                           0.,
+                           (-x1 / ((k * pow (a, 2.)) / (3. * pow (M, 2.)))));
+                for (int i = 0; i < res; i++)
+                {
+                    if (t1[i] >= EPS)
+                    {
+                        t1[3] = t1[i];
+                    }
+                }
 
-        int res = cubic (t1,
-                         (((k * a) / (2. * M) - g / 2.) /
-                          ((k * pow (a, 2.)) / (3. * pow (M, 2.)))),
-                         0.,
-                         (-x1 / ((k * pow (a, 2.)) / (3. * pow (M, 2.)))));
-        cout << res << "  Высота = " << x1 << "; Время: ";
-        for (int i = 0; i < 3; i++)
-            cout << " " << t1[i];
-        cout << endl;
+                int res2 =
+                    cubic (t2,
+                           M / a,
+                           3. * (P - g * M) * pow (M, 2.) / (k * pow (a, 3.)),
+                           3. * pow (M, 3.) * x2 / (k * pow (a, 3.)));
+                for (int i = 0; i < res2; i++)
+                {
+                    if (t2[i] >= EPS)
+                    {
+                        t2[3] = t2[i];
+                    }
+                }
 
-        int res2 = cubic (
-            t2,
-            (((k * pow (a, 2.)) / (3 * pow (M, 2.))) /
-             ((k * pow (a, 3.)) / (3 * pow (M, 3.)))),
-            ((g * M - k * a) / ((-k * pow (a, 3.)) / (3. * pow (M, 2.)))),
-            (-x2 / ((-k * pow (a, 3.)) / (3. * pow (M, 3.)))));
+                if (error > 100)
+                {
+                    cout << "ERROR: Software error: floating point counting;"
+                         << endl;
+                    return -3;
+                }
+                if (fabs (t1[3] + 1) < EPS || fabs (t2[3] + 1) < EPS)
+                {
+                    // error++;
+                    continue;
+                }
 
-        cout << res2 << "  Скорость = " << x2 << "; Время: ";
-        for (int i = 0; i < 3; i++)
-            cout << " " << t2[i];
-        cout << endl;
+                if (fabs (t1[3] - t2[3]) < tol1 ||
+                    fabs (t1[3] - t2[3]) > tol_prev)
+                {
+                    // cout<<t1[3]<<" "<<t2[3]<<endl;
+                    full_trust = 1;
+                    time -= dtime;
+                }
+                else
+                {
+                    tol_prev = static_cast<double> (fabs (t1[3] - t2[3]));
+                }
+            }
+        }
+        else
+        {
+            if (repeat == 1)
+            {
+                z        = x1;
+                V        = x2;
+                tol_prev = 1e10;
+                repeat   = 0;
+            }
 
-        cout << endl;
+            x2 = -k * log (1 - a * (dtime + time) / M) - g * (dtime + time) + V;
+            x1 = (k * (M - a * (dtime + time)) *
+                  log (1 - a * (dtime + time) / M)) /
+                     a -
+                 g * pow ((dtime + time), 2.) / 2. + k * (dtime + time) +
+                 V * (dtime + time) + z;
+
+            if (fabs (dtime + time - max (t1[3], t2[3])) < delta_time)
+            {
+                time += dtime;
+                ttime += time;
+                time       = 0;
+                full_trust = 0;
+                // end        = 1;
+            }
+        }
+
+        if (fabs (ftime - static_cast<int> (ftime)) < delta_time)
+        {
+            printf (
+                "Высота: %7.3lf;\tСкорость: %7.2lf;\tВремя: %2.0lf;\t Полная "
+                "тяга: ",
+                x1,
+                x2,
+                ftime);
+            if (full_trust == 1)
+            {
+                printf ("yes\n");
+            }
+            else
+            {
+                printf (" no\n");
+            }
+        }
     }
+
+    if (full_trust == 1)
+    {
+        cout << "hey" << endl;
+        time += dtime;
+        ttime += time;
+        time       = 0;
+        full_trust = 0;
+    }
+
+    printf ("start mass | start height | start velocity | fulltrust time | "
+            "ending speed | used fuel | end height\n%10.3lf | %12.3lf | "
+            "%14.5lf | %14.4lf | "
+            "%12.6lf | %9.3lf | %10.5lf\n",
+            M,
+            z0,
+            V0,
+            ttime,
+            x2,
+            a * ttime,
+            x1);
 
     delete[] t1;
     delete[] t2;

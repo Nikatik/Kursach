@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define EPS 1e-16
+#define EPS 1e-10
 
 int cubic (long double* x, long double a, long double b, long double c);
 void print_help (void);

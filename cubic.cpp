@@ -20,12 +20,15 @@
 
 int cubic (long double* x, long double a, long double b, long double c)
 {
-    long double q, r, r2, q3;
+    long double q;
+    long double r;
+    long double r2;
+    long double q3;
 
-    q  = (a * a - 3. * b) / 9.;
-    r  = (a * (2. * a * a - 9. * b) + 27. * c) / 54.;
-    r2 = r * r;
-    q3 = q * q * q;
+    q  = (pow (a, 2) - 3. * b) / 9.;
+    r  = (2. * pow (a, 3) - 9. * a * b + 27. * c) / 54.;
+    r2 = pow (r, 2);
+    q3 = pow (q, 3);
 
     if (r2 < q3)
     {
@@ -42,14 +45,18 @@ int cubic (long double* x, long double a, long double b, long double c)
     }
     else
     {
-        long double aa, bb;
+        long double aa;
+        long double bb;
+        int sign = -1;
 
-        if (r <= EPS)
+        if (r < EPS)
         {
-            r = -r;
+            r    = -r;
+            sign = 1;
         }
 
-        aa = -pow (r + sqrt (r2 - q3), 1. / 3.);
+        aa =
+            static_cast<long double> (sign) * pow (r + sqrt (r2 - q3), 1. / 3.);
 
         if (fabs (aa) > EPS)
         {
@@ -61,9 +68,8 @@ int cubic (long double* x, long double a, long double b, long double c)
         }
 
         a /= 3.;
-        q = aa + bb;
-        r = aa - bb;
-
+        q    = aa + bb;
+        r    = aa - bb;
         x[0] = q - a;
         x[1] = (-0.5) * q - a;
         x[2] = (sqrt (3.) * 0.5) * fabs (r);
