@@ -3,11 +3,13 @@
     on: [push]
   
     jobs:
-      build:        
-        name: Autograding
+      build:
         runs-on: ubuntu-latest
+
         steps:
           - uses: actions/checkout@v2
+
           - name: Checking permissitions
             run: sudo chmod -R 755 .github/*.sh
+
           - uses: education/autograding@v1

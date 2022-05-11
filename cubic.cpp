@@ -18,7 +18,7 @@
 // #define M_PI (3.141592653589793)
 #define M_2PI (2. * M_PI)
 
-int Cubic (long double* x, long double a, long double b, long double c)
+int cubic (long double* x, long double a, long double b, long double c)
 {
     long double q, r, r2, q3;
 
