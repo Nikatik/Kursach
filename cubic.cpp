@@ -22,8 +22,8 @@ int cubic (long double* x, long double a, long double b, long double c)
 {
     long double q, r, r2, q3;
 
-    q = (a * a - 3. * b) / 9.;
-    r = (a * (2. * a * a - 9. * b) + 27. * c) / 54.;
+    q  = (a * a - 3. * b) / 9.;
+    r  = (a * (2. * a * a - 9. * b) + 27. * c) / 54.;
     r2 = r * r;
     q3 = q * q * q;
 

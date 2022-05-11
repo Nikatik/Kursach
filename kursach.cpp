@@ -7,11 +7,8 @@
          1: help printed
 */
 #include "probe.hpp"
-#include <cstdlib>
-#include <iostream>
 #include <time.h>
 #define delta_time 1e-2
-using namespace std;
 
 int main (int argc, char* argv[])
 {
@@ -51,9 +48,9 @@ int main (int argc, char* argv[])
 
     if (argc >= 2)
     {
-        switch (atoi (argv[1]))
+        switch (argv[1][0])
         {
-            case 0:
+            case '0':
                 M = 0;
                 while (M <= 0)
                 {
@@ -86,7 +83,7 @@ int main (int argc, char* argv[])
 
                 break;
 
-            case 1:
+            case '1':
                 if (argc >= 3)
                 {
                     if (atof (argv[2]) > 0)
@@ -122,7 +119,7 @@ int main (int argc, char* argv[])
 
                 break;
 
-            case 2:
+            case '2':
                 if (argc == 8)
                 {
                     tol1 = atof (argv[2]);
@@ -146,7 +143,7 @@ int main (int argc, char* argv[])
                 }
                 break;
             default:
-                // print_help();
+                print_help();
                 return 1;
         }
     }

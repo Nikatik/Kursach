@@ -1,7 +1,11 @@
 #ifndef PROBE_H_INCLUDED
 #define PROBE_H_INCLUDED
 
+#include <cstdlib>
+#include <iostream>
 #include <math.h>
+
+using namespace std;
 
 #define EPS 1e-16
 
