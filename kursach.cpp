@@ -181,11 +181,19 @@ int main (int argc, char* argv[])
                 {
                     cout << "Vehical already landed!" << endl
                          << "Stopping..." << endl;
+
+                    delete[] t1;
+                    delete[] t2;
+
                     return 0;
                 }
                 if (fabs (V) > tol3 && V < 0)
                 {
                     cout << "Vehical crashed!" << endl << "Stopping..." << endl;
+
+                    delete[] t1;
+                    delete[] t2;
+
                     return -1;
                 }
             }
@@ -343,11 +351,19 @@ int main (int argc, char* argv[])
     if (fabs (x2) < tol3)
     {
         cout << "Vehical successfully landed!" << endl;
+
+        delete[] t1;
+        delete[] t2;
+
         return 0;
     }
     if (fabs (x2) >= tol3 && x2 < 0)
     {
         cout << "Vehical crashed!" << endl;
+
+        delete[] t1;
+        delete[] t2;
+
         return -1;
     }
 
