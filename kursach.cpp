@@ -7,7 +7,6 @@
          1: help printed
 */
 #include "probe.hpp"
-#include <time.h>
 #define delta_time 1e-4
 
 int main (int argc, char* argv[])
@@ -17,9 +16,9 @@ int main (int argc, char* argv[])
     double g = 1.634;
     double P = 350.0;
 
-    double tol1     = 0.5;
-    double tol2     = 0.03;
-    double tol3     = 0.2;
+    double tol1     = 0.001;
+    double tol2     = 0.5;
+    double tol3     = 2.;
     double tol_prev = 1e10;
 
     double M  = 100.;
@@ -30,12 +29,12 @@ int main (int argc, char* argv[])
 
     double a     = P / (g * I);
     double k     = g * I;
-    double x1    = z;
-    double x2    = V;
     double time  = 0;
     double dtime = 0;
     double ttime = 0;
     double ftime = 0;
+    double x1;
+    double x2;
 
     long double* t1;
     long double* t2;
@@ -50,11 +49,12 @@ int main (int argc, char* argv[])
         return -3;
     }
 
-    bool drop       = 0;
-    bool end        = 0;
-    bool full_trust = 0;
-    bool repeat     = 0;
-    int error       = 0;
+    bool drop       = false;
+    bool end        = false;
+    bool full_trust = false;
+    bool repeat     = false;
+
+    int error = 0;
 
     if (argc >= 2)
     {
@@ -161,7 +161,7 @@ int main (int argc, char* argv[])
     z0 = z;
     V0 = V;
 
-    if (drop != 1)
+    if (!drop)
     {
         while (z > 0)
         {
@@ -171,19 +171,19 @@ int main (int argc, char* argv[])
 
             if (V < 0. && z > 0)
             {
-                drop = 1;
+                // drop = true;
                 break;
             }
 
             if (z <= 0)
             {
-                if (fabs (V) < tol1)
+                if (fabs (V) < tol3)
                 {
                     cout << "Vehical already landded!" << endl
                          << "Stopping..." << endl;
                     return 0;
                 }
-                if (fabs (V) > tol1 && V < 0)
+                if (fabs (V) > tol3 && V < 0)
                 {
                     cout << "Vehical crashed!" << endl << "Stopping..." << endl;
                     return -1;
@@ -205,20 +205,20 @@ int main (int argc, char* argv[])
     for (dtime = 0; x1 > tol2; dtime += delta_time)
     {
         ftime += delta_time;
-        if (full_trust != 1)
+        if (!full_trust)
         {
-            if (repeat == 0)
+            if (!repeat)
             {
                 z      = x1;
                 V      = x2;
-                repeat = 1;
+                repeat = true;
                 dtime  = 0;
             }
             x1    = z + V * dtime - g * pow (dtime, 2.) / 2.;
             x2    = V - g * dtime;
             t1[3] = -1.;
             t2[3] = -1.;
-            if (end != 1)
+            if (!end && fabs (x2) > tol1)
             {
                 int res =
                     cubic (t1,
@@ -247,7 +247,7 @@ int main (int argc, char* argv[])
                     }
                 }
 
-                if (error > 100)
+                if (error > 1000)
                 {
                     cout << "ERROR: Software error: floating point counting;"
                          << endl;
@@ -263,7 +263,7 @@ int main (int argc, char* argv[])
                     fabs (t1[3] - t2[3]) > tol_prev)
                 {
                     // cout<<t1[3]<<" "<<t2[3]<<endl;
-                    full_trust = 1;
+                    full_trust = true;
                     time -= dtime;
                 }
                 else
@@ -274,12 +274,12 @@ int main (int argc, char* argv[])
         }
         else
         {
-            if (repeat == 1)
+            if (repeat)
             {
                 z        = x1;
                 V        = x2;
                 tol_prev = 1e10;
-                repeat   = 0;
+                repeat   = false;
             }
 
             x2 = -k * log (1 - a * (dtime + time) / M) - g * (dtime + time) + V;
@@ -289,13 +289,14 @@ int main (int argc, char* argv[])
                  g * pow ((dtime + time), 2.) / 2. + k * (dtime + time) +
                  V * (dtime + time) + z;
 
-            if (fabs (dtime + time - max (t1[3], t2[3])) < delta_time)
+            if (x2 > tol1 ||
+                fabs (dtime + time - max (t1[3], t2[3])) < delta_time)
             {
                 time += dtime;
                 ttime += time;
                 time       = 0;
-                full_trust = 0;
-                // end        = 1;
+                full_trust = false;
+                // end        = true;
             }
         }
 
@@ -307,7 +308,7 @@ int main (int argc, char* argv[])
                 x1,
                 x2,
                 ftime);
-            if (full_trust == 1)
+            if (full_trust)
             {
                 printf ("yes\n");
             }
@@ -318,19 +319,18 @@ int main (int argc, char* argv[])
         }
     }
 
-    if (full_trust == 1)
+    if (full_trust)
     {
         cout << "hey" << endl;
         time += dtime;
         ttime += time;
-        time       = 0;
-        full_trust = 0;
+        // full_trust = false;
     }
 
-    printf ("start mass | start height | start velocity | fulltrust time | "
+    printf ("\nstart mass | start height | start velocity | fulltrust time | "
             "ending speed | used fuel | end height\n%10.3lf | %12.3lf | "
             "%14.5lf | %14.4lf | "
-            "%12.6lf | %9.3lf | %10.5lf\n",
+            "%12.6lf | %9.3lf | %10.5lf\n\n",
             M,
             z0,
             V0,
@@ -338,6 +338,17 @@ int main (int argc, char* argv[])
             x2,
             a * ttime,
             x1);
+
+    if (fabs (x2) < tol3)
+    {
+        cout << "Vehical successfully landded!" << endl;
+        return 0;
+    }
+    if (fabs (x2) >= tol3 && x2 < 0)
+    {
+        cout << "Vehical crashed!" << endl;
+        return -1;
+    }
 
     delete[] t1;
     delete[] t2;

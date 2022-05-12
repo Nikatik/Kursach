@@ -41,9 +41,9 @@ int cubic (long double* x, long double a, long double b, long double c)
         x[1] = q * cos ((t + M_2PI) / 3.) - a;
         x[2] = q * cos ((t - M_2PI) / 3.) - a;
 
-        return (3);
+        return 3;
     }
-    else
+    if (r2 >= q3)
     {
         long double aa;
         long double bb;
@@ -76,9 +76,10 @@ int cubic (long double* x, long double a, long double b, long double c)
 
         if (fabs (x[2]) < EPS)
         {
-            return (2);
+            return 2;
         }
 
-        return (1);
+        return 1;
     }
+    return 0;
 }
