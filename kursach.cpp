@@ -218,7 +218,7 @@ int main (int argc, char* argv[])
             x2    = V - g * dtime;
             t1[3] = -1.;
             t2[3] = -1.;
-            if (!end && fabs (x2) > tol1)
+            if (!end && x2 < -tol3)
             {
                 int res =
                     cubic (t1,
@@ -258,7 +258,11 @@ int main (int argc, char* argv[])
                     // error++;
                     continue;
                 }
-
+                if (t2[3] - t1[3] > tol2)
+                {
+                    full_trust = true;
+                    time -= dtime;
+                }
                 if (fabs (t1[3] - t2[3]) < tol1 ||
                     fabs (t1[3] - t2[3]) > tol_prev)
                 {
@@ -328,16 +332,18 @@ int main (int argc, char* argv[])
     }
 
     printf ("\nstart mass | start height | start velocity | fulltrust time | "
-            "ending speed | used fuel | end height\n%10.3lf | %12.3lf | "
+            "ending speed | used fuel | end height | full time\n%10.3lf | "
+            "%12.3lf | "
             "%14.5lf | %14.4lf | "
-            "%12.6lf | %9.3lf | %10.5lf\n\n",
+            "%12.6lf | %9.3lf | %10.5lf | %9.4lf\n\n",
             M,
             z0,
             V0,
             ttime,
             x2,
             a * ttime,
-            x1);
+            x1,
+            ftime);
 
     if (fabs (x2) < tol3)
     {
