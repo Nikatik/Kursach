@@ -179,7 +179,7 @@ int main (int argc, char* argv[])
             {
                 if (fabs (V) < tol3)
                 {
-                    cout << "Vehical already landded!" << endl
+                    cout << "Vehical already landed!" << endl
                          << "Stopping..." << endl;
                     return 0;
                 }
@@ -328,20 +328,21 @@ int main (int argc, char* argv[])
     }
 
     printf ("\nstart mass | start height | start velocity | fulltrust time | "
-            "ending speed | used fuel | end height\n%10.3lf | %12.3lf | "
+            "ending speed | used fuel | end height | full time\n%10.3lf | %12.3lf | "
             "%14.5lf | %14.4lf | "
-            "%12.6lf | %9.3lf | %10.5lf\n\n",
+            "%12.6lf | %9.3lf | %10.5lf | %9.4lf\n\n",
             M,
             z0,
             V0,
             ttime,
             x2,
             a * ttime,
-            x1);
+            x1,
+            ftime);
 
     if (fabs (x2) < tol3)
     {
-        cout << "Vehical successfully landded!" << endl;
+        cout << "Vehical successfully landed!" << endl;
         return 0;
     }
     if (fabs (x2) >= tol3 && x2 < 0)
