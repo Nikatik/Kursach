@@ -7,7 +7,7 @@
          1: help printed
 */
 #include "probe.hpp"
-#define delta_time 1e-4
+#define delta_time 1e-6
 
 int main (int argc, char* argv[])
 {
@@ -40,8 +40,8 @@ int main (int argc, char* argv[])
     long double* t2;
     try
     {
-        t1 = new long double[4];
-        t2 = new long double[4];
+        t1 = new long double[6];
+        t2 = new long double[6];
     }
     catch (const bad_alloc& e)
     {
@@ -55,6 +55,7 @@ int main (int argc, char* argv[])
     bool repeat     = false;
 
     int error = 0;
+    int elem  = 0;
 
     if (argc >= 2)
     {
@@ -202,14 +203,6 @@ int main (int argc, char* argv[])
     x1 = z;
     x2 = V;
 
-    // t1^3+(((k * a) / (2 * M) - g / 2)/((k * a^2) / (3 * M^2))) * t1^2 -
-    // x1/((k * a^2) / (3 * M^2)) = 0
-
-    // t2^3 + (M / a) * t2^2 + (g * M - k * a) * t2 / ((-k * a^3) / (3 * M^2)) -
-    // x2 / ((-k * a^3) / (3 * M^3)) = 0
-
-    // t1 - t2 < tol1
-
     for (dtime = 0; x1 > tol2; dtime += delta_time)
     {
         ftime += delta_time;
@@ -222,38 +215,48 @@ int main (int argc, char* argv[])
                 repeat = true;
                 dtime  = 0;
             }
-            x1    = z + V * dtime - g * pow (dtime, 2.) / 2.;
-            x2    = V - g * dtime;
-            t1[3] = -1.;
-            t2[3] = -1.;
+            x1 = z + V * dtime - g * pow (dtime, 2.) / 2.;
+            x2 = V - g * dtime;
+            for (int i = 3; i < 6; i++)
+            {
+                t1[i] = -1.;
+                t2[i] = -1.;
+            }
             if (!end && x2 < -tol3)
             {
-                int res =
-                    cubic (t1,
-                           (((k * a) / (2. * M) - g / 2.) /
-                            ((k * pow (a, 2.)) / (3. * pow (M, 2.)))),
-                           0.,
-                           (-x1 / ((k * pow (a, 2.)) / (3. * pow (M, 2.)))));
+                int res = cubic (t1,
+                                 ((3. * (P - g * M) * M) / (2 * P * a)),
+                                 0.,
+                                 ((3. * pow (M, 2.) * -x1) / (P * a)));
+
+                elem = 0;
                 for (int i = 0; i < res; i++)
                 {
                     if (t1[i] >= EPS)
                     {
-                        t1[3] = t1[i];
+                        t1[3 + elem] = t1[i];
+                        elem++;
                     }
                 }
+                t1[3] = max (max (t1[3], t1[4]), t1[5]);
 
+                elem = 0;
                 int res2 =
                     cubic (t2,
-                           M / a,
-                           3. * (P - g * M) * pow (M, 2.) / (k * pow (a, 3.)),
-                           3. * pow (M, 3.) * x2 / (k * pow (a, 3.)));
+                           ((M) / (a)),
+                           (3. * (P - g * M) * pow (M, 2.)) / (P * pow (a, 2.)),
+                           ((3. * pow (M, 3.) * x2) / (P * pow (a, 2.))));
+
                 for (int i = 0; i < res2; i++)
                 {
+
                     if (t2[i] >= EPS)
                     {
-                        t2[3] = t2[i];
+                        t2[3 + elem] = t2[i];
+                        elem++;
                     }
                 }
+                t2[3] = max (max (t2[3], t2[4]), t2[5]);
 
                 if (error > 1000)
                 {
@@ -263,18 +266,38 @@ int main (int argc, char* argv[])
                 }
                 if (fabs (t1[3] + 1) < EPS || fabs (t2[3] + 1) < EPS)
                 {
+                    if (fabs (ftime - static_cast<int> (ftime)) < delta_time)
+                    {
+                        printf ("Высота: %9.3lf;      Скорость: %7.2lf;      "
+                                "Время: %4.0lf c;      Время_в: %7.3lf;      "
+                                "Время_с: %7.3lf;      Полная тяга: ",
+                                x1,
+                                x2,
+                                ftime,
+                                static_cast<double> (t1[3]),
+                                static_cast<double> (t2[3]));
+                        if (full_trust)
+                        {
+                            printf ("yes\n");
+                        }
+                        else
+                        {
+                            printf (" no\n");
+                        }
+                    }
                     // error++;
                     continue;
                 }
+
                 if (t2[3] - t1[3] > tol3)
                 {
                     full_trust = true;
                     time -= dtime;
                 }
+
                 if (fabs (t1[3] - t2[3]) < tol1 ||
                     fabs (t1[3] - t2[3]) > tol_prev)
                 {
-                    // cout<<t1[3]<<" "<<t2[3]<<endl;
                     full_trust = true;
                     time -= dtime;
                 }
@@ -315,11 +338,13 @@ int main (int argc, char* argv[])
         if (fabs (ftime - static_cast<int> (ftime)) < delta_time)
         {
             printf (
-                "Высота: %7.3lf;\tСкорость: %7.2lf;\tВремя: %2.0lf;\t Полная "
-                "тяга: ",
+                "Высота: %9.3lf;      Скорость: %7.2lf;      Время: %4.0lf c;  "
+                "    Время_в: %7.3lf;      Время_с: %7.3lf;      Полная тяга: ",
                 x1,
                 x2,
-                ftime);
+                ftime,
+                static_cast<double> (t1[3]),
+                static_cast<double> (t2[3]));
             if (full_trust)
             {
                 printf ("yes\n");
@@ -333,7 +358,6 @@ int main (int argc, char* argv[])
 
     if (full_trust)
     {
-        cout << "hey" << endl;
         time += dtime;
         ttime += time;
         // full_trust = false;

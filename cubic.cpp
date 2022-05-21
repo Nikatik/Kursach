@@ -1,7 +1,5 @@
 /* Cubic equation solution. Real coefficients case.
 
-   int Cubic(double *x,double a,double b,double c);
-   Parameters:
    x - solution array (size 3). On output:
        3 real roots -> then x is filled with them;
        1 real + 2 complex -> x[0] is real, x[1] is real part of
