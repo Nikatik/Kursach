@@ -14,6 +14,7 @@ int main (int argc, char* argv[])
 
     double I = 300.0;
     double g = 1.634;
+    double G = 9.80665;
     double P = 350.0;
 
     double tol1     = 0.001;
@@ -24,11 +25,12 @@ int main (int argc, char* argv[])
     double M  = 100.;
     double z  = 1000.;
     double V  = -30.;
-    double z0 = 1000.;
-    double V0 = -30.;
+    double M0 = M;
+    double z0 = z;
+    double V0 = V;
 
-    double a     = P / (g * I);
-    double k     = g * I;
+    double a     = P / (G * I);
+    double k     = G * I;
     double time  = 0;
     double dtime = 0;
     double ttime = 0;
@@ -54,111 +56,22 @@ int main (int argc, char* argv[])
     bool full_trust = false;
     bool repeat     = false;
 
-    int error = 0;
-    int elem  = 0;
+    int elem = 0;
 
-    if (argc >= 2)
+    switch (arg_pars (argc, argv, tol1, tol2, tol3, M, z, V))
     {
-        switch (argv[1][0])
-        {
-            case '0':
-                M = 0;
-                while (M <= 0)
-                {
-                    cout << "Print start mass: ";
-                    cin >> M;
-                    if (M <= 0)
-                    {
-                        cout << "Your input is not correct! Use -h for help..."
-                             << endl;
-                    }
-                    cout << endl;
-                }
-
-                z = -100;
-                while (z < 0)
-                {
-                    cout << "Print start height: ";
-                    cin >> z;
-                    if (z < 0)
-                    {
-                        cout << "Your input is not correct! Use -h for help..."
-                             << endl;
-                    }
-                    cout << endl;
-                }
-
-                cout << "Print start velocity: ";
-                cin >> V;
-                cout << endl;
-
-                break;
-
-            case '1':
-                if (argc >= 3)
-                {
-                    if (atof (argv[2]) > 0)
-                    {
-                        M = atof (argv[2]);
-                    }
-                    else
-                    {
-                        cout << "Your input is not correct! Use -h for help..."
-                             << endl;
-                        return -2;
-                    }
-                }
-
-                if (argc >= 4)
-                {
-                    if (atof (argv[3]) > 0)
-                    {
-                        z = atof (argv[3]);
-                    }
-                    else
-                    {
-                        cout << "Your input is not correct! Use -h for help..."
-                             << endl;
-                        return -2;
-                    }
-                }
-
-                if (argc >= 5)
-                {
-                    V = atof (argv[4]);
-                }
-
-                break;
-
-            case '2':
-                if (argc == 8)
-                {
-                    tol1 = atof (argv[2]);
-                    tol2 = atof (argv[3]);
-                    tol3 = atof (argv[4]);
-                    M    = atof (argv[5]);
-                    z    = atof (argv[6]);
-                    V    = atof (argv[7]);
-                    if (tol1 < 0 || tol2 < 0 || tol3 < 0 || M <= 0 || z < 0)
-                    {
-                        cout << "Your input is not correct! Use -h for help..."
-                             << endl;
-                        return -2;
-                    }
-                }
-                else
-                {
-                    cout << "Your input is not correct! Use -h for help..."
-                         << endl;
-                    return -2;
-                }
-                break;
-            default:
-                print_help();
-                return 1;
-        }
+        case -2:
+            return -2;
+        case 0:
+            break;
+        case 1:
+            return 1;
+        default:
+            printf ("\nHow had you done this?\n");
+            return -3;
     }
 
+    M0 = M;
     z0 = z;
     V0 = V;
 
@@ -200,12 +113,19 @@ int main (int argc, char* argv[])
             }
         }
     }
+
     x1 = z;
     x2 = V;
 
-    for (dtime = 0; x1 > tol2; dtime += delta_time)
+    for (dtime = 0; x1 > tol2 || fabs (x2) > tol3; dtime += delta_time)
     {
         ftime += delta_time;
+
+        if (x1 <= 0 || M < 0)
+        {
+            break;
+        }
+
         if (!full_trust)
         {
             if (!repeat)
@@ -215,19 +135,22 @@ int main (int argc, char* argv[])
                 repeat = true;
                 dtime  = 0;
             }
-            x1 = z + V * dtime - g * pow (dtime, 2.) / 2.;
-            x2 = V - g * dtime;
+
+            x1 = height (1e10, V, z, g, 1, 0, dtime);
+            x2 = velocity (1e10, V, g, 0, 0, dtime);
+
             for (int i = 3; i < 6; i++)
             {
                 t1[i] = -1.;
                 t2[i] = -1.;
             }
+
             if (!end && x2 < -tol3)
             {
                 int res = cubic (t1,
                                  ((3. * (P - g * M) * M) / (2 * P * a)),
                                  0.,
-                                 ((3. * pow (M, 2.) * -x1) / (P * a)));
+                                 ((3. * pow (M, 2.) * (-x1)) / (P * a)));
 
                 elem = 0;
                 for (int i = 0; i < res; i++)
@@ -258,34 +181,12 @@ int main (int argc, char* argv[])
                 }
                 t2[3] = max (max (t2[3], t2[4]), t2[5]);
 
-                if (error > 1000)
-                {
-                    cout << "ERROR: Software error: floating point counting;"
-                         << endl;
-                    return -3;
-                }
                 if (fabs (t1[3] + 1) < EPS || fabs (t2[3] + 1) < EPS)
                 {
-                    if (fabs (ftime - static_cast<int> (ftime)) < delta_time)
-                    {
-                        printf ("Высота: %9.3lf;      Скорость: %7.2lf;      "
-                                "Время: %4.0lf c;      Время_в: %7.3lf;      "
-                                "Время_с: %7.3lf;      Полная тяга: ",
-                                x1,
-                                x2,
-                                ftime,
-                                static_cast<double> (t1[3]),
-                                static_cast<double> (t2[3]));
-                        if (full_trust)
-                        {
-                            printf ("yes\n");
-                        }
-                        else
-                        {
-                            printf (" no\n");
-                        }
-                    }
-                    // error++;
+
+                    print_trajectory (
+                        x1, x2, ftime, t1[3], t2[3], full_trust, delta_time);
+
                     continue;
                 }
 
@@ -317,17 +218,14 @@ int main (int argc, char* argv[])
                 repeat   = false;
             }
 
-            x2 = -k * log (1 - a * (dtime + time) / M) - g * (dtime + time) + V;
-            x1 = (k * (M - a * (dtime + time)) *
-                  log (1 - a * (dtime + time) / M)) /
-                     a -
-                 g * pow ((dtime + time), 2.) / 2. + k * (dtime + time) +
-                 V * (dtime + time) + z;
+            x1 = height (M, V, z, g, a, k, dtime + time);
+            x2 = velocity (M, V, g, a, k, dtime + time);
 
             if (x2 > tol1 ||
                 fabs (dtime + time - max (t1[3], t2[3])) < delta_time)
             {
                 time += dtime;
+                M = M - a * time;
                 ttime += time;
                 time       = 0;
                 full_trust = false;
@@ -335,47 +233,18 @@ int main (int argc, char* argv[])
             }
         }
 
-        if (fabs (ftime - static_cast<int> (ftime)) < delta_time)
-        {
-            printf (
-                "Высота: %9.3lf;      Скорость: %7.2lf;      Время: %4.0lf c;  "
-                "    Время_в: %7.3lf;      Время_с: %7.3lf;      Полная тяга: ",
-                x1,
-                x2,
-                ftime,
-                static_cast<double> (t1[3]),
-                static_cast<double> (t2[3]));
-            if (full_trust)
-            {
-                printf ("yes\n");
-            }
-            else
-            {
-                printf (" no\n");
-            }
-        }
+        print_trajectory (x1, x2, ftime, t1[3], t2[3], full_trust, delta_time);
     }
 
     if (full_trust)
     {
         time += dtime;
+        M = M - a * time;
         ttime += time;
         // full_trust = false;
     }
 
-    printf ("\nstart mass | start height | start velocity | fulltrust time | "
-            "ending speed | used fuel | end height | full time\n%10.3lf | "
-            "%12.3lf | "
-            "%14.5lf | %14.4lf | "
-            "%12.6lf | %9.3lf | %10.5lf | %9.4lf\n\n",
-            M,
-            z0,
-            V0,
-            ttime,
-            x2,
-            a * ttime,
-            x1,
-            ftime);
+    print_result (M0, z0, V0, ttime, x1, x2, M0 - M, ftime);
 
     if (fabs (x2) < tol3)
     {
@@ -386,6 +255,7 @@ int main (int argc, char* argv[])
 
         return 0;
     }
+
     if (fabs (x2) >= tol3 && x2 < 0)
     {
         cout << "Vehical crashed!" << endl;

@@ -1,6 +1,6 @@
 CSOURCES := $(shell find . -name "*.c")
 CPPSOURCES := $(shell find . -name "*.cpp")
-CFLAGS := -Wall -Wextra -Wfloat-equal -O -MMD -Woverloaded-virtual -Wold-style-cast -Wundef -Wshadow -Wcast-align -Wconversion -Wunreachable-code -ftrapv -pedantic -std=c++2a -Wformat=2 -Wformat-overflow=2 -Wreturn-type -Wdouble-promotion -Wstrict-overflow=5 -Wconversion
+CFLAGS := -Wall -Werror -Wextra -Wfloat-equal -O -MMD -Woverloaded-virtual -Wold-style-cast -Wundef -Wshadow -Wcast-align -Wconversion -Wunreachable-code -ftrapv -pedantic -std=c++2a -Wformat=2 -Wformat-overflow=2 -Wreturn-type -Wdouble-promotion -Wstrict-overflow=5 -Wconversion
 
 all: CFLAGS := $(CFLAGS) -O3
 all: CXXFLAGS := $(CFLAGS)

@@ -13,7 +13,7 @@
 */
 
 #include "probe.hpp"
-// #define M_PI (3.141592653589793)
+//#define M_PI (3.141592653589793)
 #define M_2PI (2. * M_PI)
 
 int cubic (long double* x, long double a, long double b, long double c)
