@@ -38,13 +38,14 @@ void print_trajectory (double height,
                        bool full_trust,
                        double delta_time);
 
-void print_result (double start_mass,
-                   double start_height,
-                   double start_speed,
-                   double trust_time,
-                   double end_height,
-                   double end_speed,
-                   double fuel_mass,
-                   double full_time);
+int print_result (double start_mass,
+                  double start_height,
+                  double start_speed,
+                  double trust_time,
+                  double end_height,
+                  double end_speed,
+                  double fuel_mass,
+                  double full_time,
+                  double tolerance);
 
 #endif

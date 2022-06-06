@@ -7,7 +7,14 @@
          1: help printed
 */
 #include "probe.hpp"
+#include "random.hpp"
+
 #define delta_time 1e-6
+
+#define tr 1
+#define mode 1
+
+#define tt 0.2
 
 int main (int argc, char* argv[])
 {
@@ -47,7 +54,7 @@ int main (int argc, char* argv[])
     }
     catch (const bad_alloc& e)
     {
-        cout << "ERROR: Software error: memory error!!!" << endl;
+        printf ("ERROR: Software error: memory error!!!\n");
         return -3;
     }
 
@@ -57,6 +64,8 @@ int main (int argc, char* argv[])
     bool repeat     = false;
 
     int elem = 0;
+
+    int res2, res;
 
     switch (arg_pars (argc, argv, tol1, tol2, tol3, M, z, V))
     {
@@ -93,8 +102,7 @@ int main (int argc, char* argv[])
             {
                 if (fabs (V) < tol3)
                 {
-                    cout << "Vehical already landed!" << endl
-                         << "Stopping..." << endl;
+                    printf ("Vehical already landed!\nStopping...\n");
 
                     delete[] t1;
                     delete[] t2;
@@ -103,7 +111,7 @@ int main (int argc, char* argv[])
                 }
                 if (fabs (V) > tol3 && V < 0)
                 {
-                    cout << "Vehical crashed!" << endl << "Stopping..." << endl;
+                    printf ("Vehical crashed!\nStopping...\n");
 
                     delete[] t1;
                     delete[] t2;
@@ -116,7 +124,6 @@ int main (int argc, char* argv[])
 
     x1 = z;
     x2 = V;
-
     for (dtime = 0; x1 > tol2 || fabs (x2) > tol3; dtime += delta_time)
     {
         ftime += delta_time;
@@ -139,72 +146,109 @@ int main (int argc, char* argv[])
             x1 = height (1e10, V, z, g, 1, 0, dtime);
             x2 = velocity (1e10, V, g, 0, 0, dtime);
 
-            for (int i = 3; i < 6; i++)
-            {
-                t1[i] = -1.;
-                t2[i] = -1.;
-            }
-
             if (!end && x2 < -tol3)
             {
-                int res = cubic (t1,
-                                 ((3. * (P - g * M) * M) / (2 * P * a)),
-                                 0.,
-                                 ((3. * pow (M, 2.) * (-x1)) / (P * a)));
-
-                elem = 0;
-                for (int i = 0; i < res; i++)
+                switch (mode)
                 {
-                    if (t1[i] >= EPS)
-                    {
-                        t1[3 + elem] = t1[i];
-                        elem++;
-                    }
-                }
-                t1[3] = max (max (t1[3], t1[4]), t1[5]);
+                    case 2:
+                        if (fabs (ftime * tt - static_cast<int> (ftime * tt)) <
+                            delta_time * tt)
+                        {
+                            if (probe (1000) % 2 == 1)
+                            {
+                                full_trust = true;
+                                time -= dtime;
+                                t1[3] = t2[3] = 1 / tt;
+                            }
+                            else
+                            {
+                                t1[3] = t2[3] = 0;
+                            }
+                        }
+                        break;
+                    case 3:
+                        if (fabs (ftime * tt - static_cast<int> (ftime * tt)) <
+                            delta_time * tt)
+                        {
+                            P = static_cast<double> (probe (1000) % 14) * (350 / 15) + 350 / 15;
+                            a = P / (G * I);
+                tol_prev = 1e10;
+                        }
+                    default:
 
-                elem = 0;
-                int res2 =
-                    cubic (t2,
-                           ((M) / (a)),
-                           (3. * (P - g * M) * pow (M, 2.)) / (P * pow (a, 2.)),
-                           ((3. * pow (M, 3.) * x2) / (P * pow (a, 2.))));
+                        for (int i = 3; i < 6; i++)
+                        {
+                            t1[i] = -1.;
+                            t2[i] = -1.;
+                        }
 
-                for (int i = 0; i < res2; i++)
-                {
+                        res = cubic (t1,
+                                     ((3. * (P - g * M) * M) / (2 * P * a)),
+                                     0.,
+                                     ((3. * pow (M, 2.) * (-x1)) / (P * a)));
 
-                    if (t2[i] >= EPS)
-                    {
-                        t2[3 + elem] = t2[i];
-                        elem++;
-                    }
-                }
-                t2[3] = max (max (t2[3], t2[4]), t2[5]);
+                        elem = 0;
+                        for (int i = 0; i < res; i++)
+                        {
+                            if (t1[i] >= EPS)
+                            {
+                                t1[3 + elem] = t1[i];
+                                elem++;
+                            }
+                        }
+                        t1[3] = max (max (t1[3], t1[4]), t1[5]);
 
-                if (fabs (t1[3] + 1) < EPS || fabs (t2[3] + 1) < EPS)
-                {
+                        elem = 0;
+                        res2 = cubic (
+                            t2,
+                            ((M) / (a)),
+                            (3. * (P - g * M) * pow (M, 2.)) /
+                                (P * pow (a, 2.)),
+                            ((3. * pow (M, 3.) * x2) / (P * pow (a, 2.))));
 
-                    print_trajectory (
-                        x1, x2, ftime, t1[3], t2[3], full_trust, delta_time);
+                        for (int i = 0; i < res2; i++)
+                        {
 
-                    continue;
-                }
+                            if (t2[i] >= EPS)
+                            {
+                                t2[3 + elem] = t2[i];
+                                elem++;
+                            }
+                        }
+                        t2[3] = max (max (t2[3], t2[4]), t2[5]);
 
-                if (t2[3] - t1[3] > tol3)
-                {
-                    full_trust = true;
-                    time -= dtime;
-                }
+                        if (fabs (t1[3] + 1) < EPS || fabs (t2[3] + 1) < EPS)
+                        {
 
-                if (fabs (t1[3] - t2[3]) < tol1 ||
-                    fabs (t1[3] - t2[3]) > tol_prev)
-                {
-                    full_trust = true;
-                    time -= dtime;
-                }
-                else
-                {
-                    tol_prev = static_cast<double> (fabs (t1[3] - t2[3]));
+                            if (tr == 1)
+                                print_trajectory (x1,
+                                                  x2,
+                                                  ftime,
+                                                  t1[3],
+                                                  t2[3],
+                                                  full_trust,
+                                                  delta_time);
+
+                            continue;
+                        }
+
+                        if (t2[3] - t1[3] > tol3)
+                        {
+                            full_trust = true;
+                            time -= dtime;
+                        }
+
+                        if (fabs (t1[3] - t2[3]) <
+                            tol1|| fabs (t1[3] - t2[3]) > tol_prev)
+                        {
+                            full_trust = true;
+                            time -= dtime;
+                        }
+                        else
+                        {
+                            tol_prev =
+                                static_cast<double> (fabs (t1[3] - t2[3]));
+                        }
                 }
             }
         }
@@ -231,11 +275,28 @@ int main (int argc, char* argv[])
                 full_trust = false;
                 // end        = true;
             }
+
+            if (mode != 1 && mode != 2)
+            {
+
+                if (fabs (ftime * tt - static_cast<int> (ftime * tt)) <
+                    delta_time * tt)
+                {
+                    P = static_cast<double> (probe (1000) % 14) * (350 / 15) + 350 / 15;
+                    a = P / (G * I);
+                    time += dtime;
+                    M = M - a * time;
+                    ttime += time;
+                    time       = 0;
+                    full_trust = false;
+                }
+            }
         }
 
-        print_trajectory (x1, x2, ftime, t1[3], t2[3], full_trust, delta_time);
+        if (tr == 1)
+            print_trajectory (
+                x1, x2, ftime, t1[3], t2[3], full_trust, delta_time);
     }
-
     if (full_trust)
     {
         time += dtime;
@@ -244,21 +305,8 @@ int main (int argc, char* argv[])
         // full_trust = false;
     }
 
-    print_result (M0, z0, V0, ttime, x1, x2, M0 - M, ftime);
-
-    if (fabs (x2) < tol3)
+    if (print_result (M0, z0, V0, ttime, x1, x2, M0 - M, ftime, tol3) == -1)
     {
-        cout << "Vehical successfully landed!" << endl;
-
-        delete[] t1;
-        delete[] t2;
-
-        return 0;
-    }
-
-    if (fabs (x2) >= tol3 && x2 < 0)
-    {
-        cout << "Vehical crashed!" << endl;
 
         delete[] t1;
         delete[] t2;
