@@ -3,7 +3,7 @@
 #include <random>
 using namespace std;
 
-long long int probe (int);
-void checksum (int);
-void check (int);
-void timeM (int);
+long long int probe (unsigned int);
+void checksum (unsigned int);
+void check (unsigned int);
+void timeM (unsigned int);

@@ -1,6 +1,7 @@
 # Kursach
 [![C/C++ CI](https://github.com/Nikatik/Kursach/actions/workflows/main.yml/badge.svg)](https://github.com/Nikatik/Kursach/actions/workflows/main.yml)
 [![Lint](https://github.com/Nikatik/Kursach/actions/workflows/lint.yml/badge.svg)](https://github.com/Nikatik/Kursach/actions/workflows/lint.yml)
+[![GitHub Classroom Workflow](https://github.com/Nikatik/Kursach/actions/workflows/classroom.yml/badge.svg)](https://github.com/Nikatik/Kursach/actions/workflows/classroom.yml)
 
 **Программа по расчёту оптимального управления с мягкой посадкой для вертикального этапа снижения.**
 

@@ -11,7 +11,7 @@
 
 #define delta_time 1e-6
 
-#define tr 1
+#define tr 1        // trace trajectory
 #define mode 1
 
 #define tt 0.2
@@ -29,12 +29,12 @@ int main (int argc, char* argv[])
     double tol3     = 2.;
     double tol_prev = 1e10;
 
-    double M  = 100.;
-    double z  = 1000.;
-    double V  = -30.;
-    double M0 = M;
-    double z0 = z;
-    double V0 = V;
+    double M = 100.;
+    double z = 1000.;
+    double V = -30.;
+    double M0;
+    double z0;
+    double V0;
 
     double a     = P / (G * I);
     double k     = G * I;
@@ -65,17 +65,30 @@ int main (int argc, char* argv[])
 
     int elem = 0;
 
-    int res2, res;
+    int res;
+    int res2;
 
     switch (arg_pars (argc, argv, tol1, tol2, tol3, M, z, V))
     {
         case -2:
+            delete[] t1;
+            delete[] t2;
+
             return -2;
+
         case 0:
             break;
+
         case 1:
+            delete[] t1;
+            delete[] t2;
+
             return 1;
+
         default:
+            delete[] t1;
+            delete[] t2;
+
             printf ("\nHow had you done this?\n");
             return -3;
     }
@@ -148,7 +161,10 @@ int main (int argc, char* argv[])
 
             if (!end && x2 < -tol3)
             {
-                switch (mode)
+                _Pragma ("GCC diagnostic push") _Pragma (
+                    "GCC diagnostic ignored \"-Wimplicit-fallthrough=\"")
+
+                    switch (mode)
                 {
                     case 2:
                         if (fabs (ftime * tt - static_cast<int> (ftime * tt)) <
@@ -170,9 +186,11 @@ int main (int argc, char* argv[])
                         if (fabs (ftime * tt - static_cast<int> (ftime * tt)) <
                             delta_time * tt)
                         {
-                            P = static_cast<double> (probe (1000) % 14) * (350 / 15) + 350 / 15;
-                            a = P / (G * I);
-                tol_prev = 1e10;
+                            P = static_cast<double> (probe (1000) % 14) *
+                                    (350. / 15.) +
+                                350. / 15.;
+                            a        = P / (G * I);
+                            tol_prev = 1e10;
                         }
                     default:
 
@@ -221,6 +239,7 @@ int main (int argc, char* argv[])
                         {
 
                             if (tr == 1)
+                            {
                                 print_trajectory (x1,
                                                   x2,
                                                   ftime,
@@ -228,6 +247,7 @@ int main (int argc, char* argv[])
                                                   t2[3],
                                                   full_trust,
                                                   delta_time);
+                            }
 
                             continue;
                         }
@@ -238,8 +258,8 @@ int main (int argc, char* argv[])
                             time -= dtime;
                         }
 
-                        if (fabs (t1[3] - t2[3]) <
-                            tol1|| fabs (t1[3] - t2[3]) > tol_prev)
+                        if (fabs (t1[3] - t2[3]) < tol1 ||
+                            fabs (t1[3] - t2[3]) > tol_prev)
                         {
                             full_trust = true;
                             time -= dtime;
@@ -250,6 +270,7 @@ int main (int argc, char* argv[])
                                 static_cast<double> (fabs (t1[3] - t2[3]));
                         }
                 }
+                _Pragma ("GCC diagnostic pop")
             }
         }
         else
@@ -282,7 +303,8 @@ int main (int argc, char* argv[])
                 if (fabs (ftime * tt - static_cast<int> (ftime * tt)) <
                     delta_time * tt)
                 {
-                    P = static_cast<double> (probe (1000) % 14) * (350 / 15) + 350 / 15;
+                    P = static_cast<double> (probe (1000) % 14) * (350. / 15.) +
+                        350. / 15.;
                     a = P / (G * I);
                     time += dtime;
                     M = M - a * time;
@@ -294,8 +316,10 @@ int main (int argc, char* argv[])
         }
 
         if (tr == 1)
+        {
             print_trajectory (
                 x1, x2, ftime, t1[3], t2[3], full_trust, delta_time);
+        }
     }
     if (full_trust)
     {
